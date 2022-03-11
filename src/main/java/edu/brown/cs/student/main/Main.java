@@ -1,21 +1,21 @@
 package edu.brown.cs.student.main;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Map;
-import java.util.Set;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import freemarker.template.Configuration;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import joptsimple.OptionSpec;
-import spark.*;
-import spark.template.freemarker.FreeMarkerEngine;
+import spark.ExceptionHandler;
+import spark.Request;
+import spark.Response;
+import spark.Route;
+import spark.Spark;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The Main class of our project. This is where execution begins.
@@ -62,6 +62,7 @@ public final class Main {
     // TODO: create a call to Spark.post to make a POST request to a URL which
     // will handle getting matchmaking results for the input
     // It should only take in the route and a new ResultsHandler
+
     Spark.options("/*", (request, response) -> {
       String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
       if (accessControlRequestHeaders != null) {
@@ -80,6 +81,8 @@ public final class Main {
     // Allows requests from any domain (i.e., any URL). This makes development
     // easier, but it’s not a good idea for deployment.
     Spark.before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
+    Spark.post("/match", new ResultsHandler());
+    //Spark.get("/match", new ResultsHandler());
   }
 
   /**
@@ -107,17 +110,24 @@ public final class Main {
   private static class ResultsHandler implements Route {
     @Override
     public String handle(Request req, Response res) {
-      // TODO: Get JSONObject from req and use it to get the value of the sun, moon,
-      // and rising
-      // for generating matches
+      // TODO: Get JSONObject from req and use it to get the value of the sun, moon, and rising for generating matches
+      Gson gson = new Gson();
+      // Put the request's body in JSON format
+      JsonObject jsonObject = gson.fromJson(req.body(), JsonObject.class);
+      //new JsonParser().parse(json).getAsJsonObject();
+      String sun = jsonObject.get("sun").getAsString();
+      String moon = jsonObject.get("moon").getAsString();
+      String rising = jsonObject.get("rising").getAsString();
 
       // TODO: use the MatchMaker.makeMatches method to get matches
-
+      List<String> matches = MatchMaker.makeMatches(sun, moon, rising);
       // TODO: create an immutable map using the matches
-
+      JsonArray jsonArray2 = new Gson().toJsonTree(matches).getAsJsonArray();
+      //Map unmodifiableMap = ImmutableMap.of(matches);
       // TODO: return a json of the suggestions (HINT: use GSON.toJson())
       Gson GSON = new Gson();
-      return null;
+      //return GSON.toJson(unmodifiableMap);
+      return GSON.toJson(jsonArray2);
     }
   }
 }
